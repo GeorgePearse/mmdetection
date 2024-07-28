@@ -27,6 +27,8 @@
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
+THIS IS AN EXPERIMENTAL FORK OF MMDetection. As of Feb 2024 it does not appear to be maintained. 
+
 [📘Documentation](https://mmdetection.readthedocs.io/en/latest/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) |
 [👀Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) |
