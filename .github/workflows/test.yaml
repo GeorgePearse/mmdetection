@@ -1,0 +1,117 @@
+name: MMDetection CI
+
+on:
+  push:
+    branches: [ dev-3.x ]
+  pull_request:
+    branches: [ dev-3.x ]
+
+env:
+  LINT_ONLY: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit interrogate
+    - name: Linting
+      run: pre-commit run --all-files
+    - name: Check docstring coverage
+      run: |
+        interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-magic --ignore-regex "__repr__" --fail-under 85 mmdet
+
+  build_cpu:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python: '3.7.16'
+            torch: '1.8.0'
+            torchvision: '0.9.0'
+          - python: '3.9.0'
+            torch: '2.0.0'
+            torchvision: '0.15.1'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5
+        python -m pip install --upgrade pip wheel
+        python -m pip install torch==${{ matrix.torch }}+cpu torchvision==${{ matrix.torchvision }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
+    - name: Install DSDL (Python 3.9 only)
+      if: matrix.python == '3.9.0'
+      run: |
+        pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+        pip install dsdl
+    - name: Install MMDet dependencies
+      run: |
+        python -m pip install git+https://github.com/open-mmlab/mmengine.git@main
+        pip install -U openmim
+        mim install 'mmcv >= 2.0.0rc4'
+        pip install -r requirements/tests.txt -r requirements/optional.txt
+        pip install --force-reinstall pycocotools
+        pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+        pip install -r requirements/tracking.txt
+        pip install git+https://github.com/cocodataset/panopticapi.git
+        pip install git+https://github.com/JonathonLuiten/TrackEval.git
+    - name: Build and install
+      run: pip install -e .
+    - name: Run unittests
+      run: |
+        python -m coverage run --branch --source mmdet -m pytest tests/
+        python -m coverage xml
+        python -m coverage report -m
+
+  build_cuda:
+    needs: build_cpu
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - torch: '1.8.1'
+            cuda: '11.1'
+          - torch: '2.0.0'
+            cuda: '11.7'
+            cudnn: 8
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    - name: Set up CUDA
+      uses: Jimver/cuda-toolkit@v0.2.11
+      with:
+        cuda: ${{ matrix.cuda }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip wheel
+        python -m pip install torch==${{ matrix.torch }} torchvision -f https://download.pytorch.org/whl/cu${{ matrix.cuda }}/torch_stable.html
+        python -m pip install git+https://github.com/open-mmlab/mmengine.git@main
+        pip install -U openmim
+        mim install 'mmcv >= 2.0.0rc4'
+        pip install -r requirements/tests.txt -r requirements/optional.txt
+        pip install pycocotools
+        pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+        pip install -r requirements/tracking.txt
+        pip install git+https://github.com/cocodataset/panopticapi.git
+        pip install git+https://github.com/JonathonLuiten/TrackEval.git
+    - name: Build and install
+      run: pip install -e .
+    - name: Run unittests
+      run: python -m pytest tests/
