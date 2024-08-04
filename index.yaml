@@ -1,0 +1,53 @@
+site_name: "Vision Chain"
+repo_url: https://github.com/BinItAI/VisionChain
+
+theme:
+  name: "material"
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+nav:     
+  - Dataset Splitting: 'index.md'
+  - Dataset Analysis: 
+     - Heuristics: 'analysis/discovery.md'
+     - Heuristics: 'analysis/heuristics.md'
+  - Utils: 'index.md'
+  - Evaluation: 'index.md'
+  - Ensembles: 
+    - Ensembles: 'ensembles/ensembles.md'
+    - Aggregations: 'ensembles/aggregations.md'
+  - Active Learning: 'active-learning/active-learning.md'
+  - Heuristics: 'heuristics/heuristics.md'
+  - Thresholding: 'thresholding/thresholding.md'
+  - Common Business Problems: 'problems/problems.md'
+  - Control Room: 'control_room.md'
+  
+
+plugins:
+- mkdocstrings:
+    enabled: !ENV [ENABLE_MKDOCSTRINGS, true]
+    default_handler: python
+    handlers:
+      python:
+        options:
+          show_source: true
+- search:
+    lang: en
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
